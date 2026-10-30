@@ -211,4 +211,69 @@ window.previewPrint=function(){
 };
 D.getElementById('pvClose').onclick=()=>D.getElementById('paperPreviewRoot').classList.remove('active');
 D.getElementById('pvPdf').onclick=()=>window.print();
+
+/* 실제 학교 PDF 파일을 한 번 업로드하면 그 원본 페이지를 배경으로 사용한다.
+   pdf.js로 브라우저 내부에서 그린 뒤 한글 명단/서명을 올려 PDF 인쇄를 지원한다. */
+function imageFromData(src){return new Promise((resolve,reject)=>{
+ const im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src=src;
+})}
+async function makeOriginalTemplatePages(template){
+ if(!window.pdfjsLib)throw Error('PDF 읽기 라이브러리를 불러오지 못했습니다.');
+ pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+ const src=await pdfjsLib.getDocument({data:baseBytes(template.file_data)}).promise;
+ const pdf=await src.getPage(1),scale=2,viewport=pdf.getViewport({scale});
+ const pages=Math.max(1,Math.ceil(people.length/50)),images=[];
+ for(let n=0;n<pages;n++){
+  const c=document.createElement('canvas');c.width=Math.round(viewport.width);c.height=Math.round(viewport.height);
+  const g=c.getContext('2d',{alpha:false});await pdf.render({canvasContext:g,viewport}).promise;
+  g.save();g.setTransform(scale,0,0,scale,0,0);
+  const fullName=current.title||'';g.textAlign='center';g.textBaseline='middle';
+  // 원본 [제목] 표시를 깨끗하게 가리고 연수명으로 대체
+  g.fillStyle='#fff';g.fillRect(222,84,150,31);
+  g.fillStyle='#111';g.font='bold 18px "Malgun Gothic","Noto Sans CJK KR",sans-serif';
+  if(g.measureText(fullName).width>450){g.font='bold 13px "Malgun Gothic","Noto Sans CJK KR",sans-serif'}
+  g.fillText(fullName,297,101,460);
+  g.font='11px "Malgun Gothic","Noto Sans CJK KR",sans-serif';
+  // 정보 칸 중앙 정렬
+  g.fillText(current.when_text||'',196.8,145,195);
+  g.fillText(current.place||'',435.5,145,204);
+  const batch=people.slice(n*50,(n+1)*50);
+  for(let k=0;k<50;k++){
+   const side=Math.floor(k/25),row=k%25,p=batch[k];
+   const y=195.5+row*24.27,offset=side?241.3:0;
+   // 두 번째 페이지부터 연번을 새로 매긴다
+   if(n>0){g.fillStyle='#fff';g.fillRect((side?304:65),y-10,27,20);
+      g.fillStyle='#111';g.font='10px "Malgun Gothic",sans-serif';
+      g.fillText(String(n*50+k+1),side?316:75.5,y);
+   }
+   if(!p)continue;
+   g.fillStyle='#111';g.font='10px "Malgun Gothic","Noto Sans CJK KR",sans-serif';
+   g.fillText(p.position||'',126+offset,y,64);
+   g.fillText(p.full_name||'',186.7+offset,y,48);
+   if(p.signature_data?.startsWith('data:image/png;base64,')){
+    try{const im=await imageFromData(p.signature_data);
+       const ratio=Math.min(80/im.width,19/im.height);
+       g.drawImage(im,255.4+offset-im.width*ratio/2,y-im.height*ratio/2,im.width*ratio,im.height*ratio);
+    }catch(e){console.warn('서명 이미지 처리 실패',e)}
+   }
+  }
+  g.restore();
+  images.push('<article class="paper-sheet"><img alt="전자서명 등록부 '+(n+1)+'페이지" style="width:100%;height:100%;display:block" src="'+c.toDataURL('image/png')+'"></article>');
+ }
+ return images.join('');
+}
+window.previewPrint=async function(){
+ const preview=D.getElementById('paperPreviewRoot');const body=D.getElementById('pvPages');
+ preview.classList.add('active');body.innerHTML='<div style="padding:35px">인쇄 미리보기를 만드는 중입니다…</div>';
+ try{
+  // 지정하지 않아도 관리자 계정에 가장 최근 저장된 PDF를 기본 양식으로 적용
+  const selected=chosen?.(),pdfTemplate=selected?.kind==='pdf'?selected:templates.find(t=>t.kind==='pdf');
+  const html=pdfTemplate?await makeOriginalTemplatePages(pdfTemplate):printMarkup();
+  $('printArea').innerHTML=html;body.innerHTML=html;
+  if(pdfTemplate)notice('업로드한 실제 학교 PDF 양식에 명단을 반영했습니다.');
+ }catch(e){
+  console.error(e);notice('학교 원본 PDF 적용에 실패해 기본 50명 양식으로 대체합니다: '+(e.message||e));
+  const html=printMarkup();$('printArea').innerHTML=html;body.innerHTML=html;
+ }
+};
 })();
