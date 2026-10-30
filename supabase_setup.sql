@@ -76,18 +76,20 @@ revoke all on function public.public_training(uuid) from public;
 grant execute on function public.public_training(uuid) to anon,authenticated;
 revoke all on function public.submit_signature(uuid,text,text,text) from public;
 grant execute on function public.submit_signature(uuid,text,text,text) to anon,authenticated;
--- RLS table privileges; prevent client reading password hashes by removing select privileges to authenticated? 
--- participants accessed by admin through view without access_hash, never return hash to browser:
-create or replace view public.participant_admin with (security_invoker=true) as
- select id,training_id,position,full_name,sort_order,signed_at,signature_data,created_at from public.participants;
-grant select on public.participant_admin to authenticated;
--- Restrict direct exposure of access_hash, allow ownership scoped updates via RPC
-revoke select on public.participants from anon,authenticated;
-grant select(id,training_id,position,full_name,sort_order,signed_at,signature_data,created_at) on public.participants to authenticated;
-grant insert,update,delete on public.participants to authenticated;
--- ensure random access codes are not overwritten directly by client
-revoke update(access_hash) on public.participants from authenticated;
--- logging server only
-revoke all on public.audit_logs from anon,authenticated;
-grant select on public.audit_logs to authenticated;
--- Expose read status via polling (realtime optional)
+-- Explicit Data API grants: required when "Automatically expose new tables" is OFF.
+-- Do not grant any table access to anon. Public signing uses only narrow RPCs.
+revoke all on table public.trainings from anon, authenticated;
+grant select, insert, update, delete on table public.trainings to authenticated;
+revoke all on table public.templates from anon, authenticated;
+grant select, insert, update, delete on table public.templates to authenticated;
+revoke all on table public.participants from anon, authenticated;
+grant select(id, training_id, position, full_name, sort_order, signed_at, signature_data, created_at)
+  on table public.participants to authenticated;
+grant update(position, full_name, sort_order, signed_at, signature_data)
+  on table public.participants to authenticated;
+grant delete on table public.participants to authenticated;
+revoke all on table public.audit_logs from anon, authenticated;
+grant select on table public.audit_logs to authenticated;
+grant select on table public.participant_admin to authenticated;
+
+-- Server RPC permissions are granted above. Do NOT grant SELECT on access_hash.
