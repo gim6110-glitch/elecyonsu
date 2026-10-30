@@ -295,4 +295,46 @@ window.previewPrint=async function(){
 };
 // If someone changes the template at detail view, the new selection now persists.
 const p=$v('mapping');p.insertAdjacentHTML('afterbegin','<div class="template-note">선택한 학교 양식은 현재 연수에 저장됩니다. 다른 학교 PDF는 “PDF 양식 위치 설정”에서 해당 서식의 입력 위치를 맞춰 주세요.</div>');
+
+/* Excel export includes actual PNG signatures, preserving uploaded XLSX workbook when possible. */
+const oldExport=window.exportCustom;
+window.exportCustom=async function(format){
+ if(format==='pdf'){await previewPrint();return}
+ if(format!=='xlsx'){return oldExport(format)}
+ if(!window.ExcelJS){notice('ExcelJS 라이브러리를 불러오지 못했습니다. 네트워크를 확인하세요.');return}
+ try{
+  const selectedTemplate=templates.find(t=>t.id===current?.selected_template_id);
+  const wb=new ExcelJS.Workbook();
+  if(selectedTemplate?.kind==='xlsx')await wb.xlsx.load(baseBytes(selectedTemplate.file_data));
+  else{
+   const ws=wb.addWorksheet('명단');
+   ws.getCell('A1').value=current.title;
+   ws.getCell('A2').value='일시';ws.getCell('B2').value=current.when_text;
+   ws.getCell('A3').value='장소';ws.getCell('B3').value=current.place;
+   ws.getRow(7).values=['연번','직급','성명','서명'];
+   ws.columns=[{width:12},{width:19},{width:23},{width:26}];
+  }
+  const sheet=wb.worksheets[0];if(!sheet)throw Error('양식의 시트를 읽을 수 없습니다.');
+  const map=selectedTemplate?.kind==='xlsx'?(selectedTemplate.mapping||{}):{};
+  const start=Math.max(1,Math.floor(Number(map.start)||8)),step=Math.max(1,Math.floor(Number(map.step)||1));
+  const positionColumn=typeof map.pos==='string'&&/^[A-Z]{1,3}$/i.test(map.pos)?map.pos.toUpperCase():'B';
+  const nameColumn=typeof map.name==='string'&&/^[A-Z]{1,3}$/i.test(map.name)?map.name.toUpperCase():'C';
+  const signatureColumn=typeof map.sign==='string'&&/^[A-Z]{1,3}$/i.test(map.sign)?map.sign.toUpperCase():'D';
+  const colIndex=(letters)=>letters.split('').reduce((n,c)=>n*26+c.charCodeAt(0)-64,0);
+  const index=colIndex(signatureColumn)-1;
+  people.forEach((p,i)=>{
+   const row=start+i*step;sheet.getCell(positionColumn+row).value=p.position;
+   sheet.getCell(nameColumn+row).value=p.full_name;
+   if(!selectedTemplate||selectedTemplate.kind!=='xlsx')sheet.getCell('A'+row).value=i+1;
+   if(p.signature_data?.startsWith('data:image/png;base64,')){
+    const imageId=wb.addImage({base64:p.signature_data,extension:'png'});
+    const rowItem=sheet.getRow(row);rowItem.height=Math.max(rowItem.height||20,27);
+    sheet.addImage(imageId,{tl:{col:index+0.06,row:row-1+0.07},ext:{width:85,height:25},editAs:'oneCell'});
+   }else sheet.getCell(signatureColumn+row).value='';
+  });
+  const buf=await wb.xlsx.writeBuffer();
+  download((current.title||'연수')+'_서명부.xlsx',new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
+  notice('서명 이미지가 포함된 Excel 서명부를 저장했습니다.');
+ }catch(e){err(e)}
+};
 })();
