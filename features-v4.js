@@ -5,7 +5,7 @@ const D=document,$v=id=>D.getElementById(id);
 const css=D.createElement('style');css.textContent=`
 .roster-tools{display:flex;gap:9px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:14px 0}
 .roster-tools button{font-size:13px}.roster-chk{width:17px;height:17px;min-width:17px;margin:0;accent-color:#6255f5;cursor:pointer}
-#people td:first-child,#people th:first-child{text-align:center;width:40px}
+#people td:nth-child(3),#people th:nth-child(3){text-align:center;width:40px}
 #previousRosterDialog,#pdfMappingDialog{position:fixed;inset:0;background:#18213ca6;z-index:10010;display:none;align-items:center;justify-content:center;padding:18px}
 #previousRosterDialog.active,#pdfMappingDialog.active{display:flex}
 .submodal-card{max-width:620px;width:100%;max-height:90vh;overflow:auto;border-radius:15px;padding:24px;background:#fff}
@@ -87,8 +87,8 @@ peopleCard.addEventListener('change',e=>{
 function refreshMaster(){const m=$v('rosterSelectAll');if(m){m.checked=people.length>0&&people.every(p=>selected.has(p.id));m.indeterminate=people.some(p=>selected.has(p.id))&&!m.checked}}
 window.renderPeople=function(){
  const ids=new Set(people.map(p=>p.id));for(const id of [...selected])if(!ids.has(id))selected.delete(id);
- $v('people').innerHTML='<table><thead><tr><th><input id="rosterSelectAll" class="roster-chk" type="checkbox" aria-label="전체 선택"></th><th>연번</th><th>직급</th><th>성명</th><th>서명</th><th>작업</th></tr></thead><tbody>'+
- people.map((p,i)=>'<tr><td><input class="roster-chk" type="checkbox" data-id="'+p.id+'" aria-label="'+escapeHtml(p.full_name)+' 선택" '+(selected.has(p.id)?'checked':'')+'></td><td>'+(i+1)+'</td><td>'+escapeHtml(p.position)+'</td><td>'+escapeHtml(p.full_name)+'</td><td>'+(p.signed_at?'<span class="tag">완료</span>':'미완료')+'</td><td class="actions"><button class="alt" '+(!i?'disabled':'')+' onclick="movePerson(\''+p.id+'\',-1)">↑</button><button class="alt" '+(i===people.length-1?'disabled':'')+' onclick="movePerson(\''+p.id+'\',1)">↓</button><button class="alt" onclick="editPerson(\''+p.id+'\')">✎</button><button class="danger" onclick="delPerson(\''+p.id+'\')">×</button></td></tr>').join('')+'</tbody></table>';
+ $v('people').innerHTML='<table><thead><tr><th>연번</th><th>직급</th><th><input id="rosterSelectAll" class="roster-chk" type="checkbox" aria-label="전체 선택"></th><th>성명</th><th>서명</th><th>작업</th></tr></thead><tbody>'+
+ people.map((p,i)=>'<tr><td>'+(i+1)+'</td><td>'+escapeHtml(p.position)+'</td><td><input class="roster-chk" type="checkbox" data-id="'+p.id+'" aria-label="'+escapeHtml(p.full_name)+' 선택" '+(selected.has(p.id)?'checked':'')+'></td><td>'+escapeHtml(p.full_name)+'</td><td>'+(p.signed_at?'<span class="tag">완료</span>':'미완료')+'</td><td class="actions"><button class="alt" '+(!i?'disabled':'')+' onclick="movePerson(\''+p.id+'\',-1)">↑</button><button class="alt" '+(i===people.length-1?'disabled':'')+' onclick="movePerson(\''+p.id+'\',1)">↓</button><button class="alt" onclick="editPerson(\''+p.id+'\')">✎</button><button class="danger" onclick="delPerson(\''+p.id+'\')">×</button></td></tr>').join('')+'</tbody></table>';
  refreshMaster();
 };
 async function renumber(){
