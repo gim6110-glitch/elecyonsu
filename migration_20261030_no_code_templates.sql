@@ -35,11 +35,15 @@ begin
  select t.id,t.owner_id,t.enabled into v_training,v_owner,v_enabled
  from public.trainings t where t.token=p_token;
  if v_training is null or not v_enabled then return 'CLOSED';end if;
- select count(*), min(p.id) into v_count,v_id from public.participants p
+ select count(*) into v_count from public.participants p
  where p.training_id=v_training
    and p.full_name=trim(p_name) and p.position=trim(p_position);
  if v_count=0 then return 'NO_MATCH';end if;
  if v_count>1 then return 'AMBIGUOUS';end if;
+ select p.id into v_id from public.participants p
+ where p.training_id=v_training
+   and p.full_name=trim(p_name) and p.position=trim(p_position)
+ limit 1;
  update public.participants set signed_at=now(),signature_data=p_signature
  where id=v_id and signed_at is null;
  if not found then return 'ALREADY';end if;
