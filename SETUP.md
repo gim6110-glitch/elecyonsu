@@ -1,4 +1,4 @@
-# Supabase 연결 안내 — 이 순서대로 따라 하세요
+> ⚠️ **현재 설치 안내의 일부는 v1 기준입니다. 이미 생성된 Supabase 프로젝트는 먼저 [UPGRADE_V4.md](./UPGRADE_V4.md)의 SQL 마이그레이션을 실행하세요. 최신 버전에는 개인별 확인코드가 없습니다.**\n\n# Supabase 연결 안내 — 이 순서대로 따라 하세요
 
 ## 1. 프로젝트 만들기
 1. https://supabase.com/dashboard 열기 (이미 GitHub 계정으로 가입한 상태면 로그인)
