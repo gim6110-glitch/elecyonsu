@@ -1,5 +1,5 @@
 -- 전자 연수등록부. 새 Supabase 프로젝트 SQL Editor에서 1회 실행
-create extension if not exists pgcrypto;
+create extension if not exists pgcrypto with schema extensions;
 create table if not exists public.trainings (
  id uuid primary key default gen_random_uuid(), owner_id uuid not null references auth.users(id) on delete cascade,
  title text not null, when_text text not null default '', place text not null default '',
@@ -47,7 +47,7 @@ begin
  if auth.uid() is null or not exists(select 1 from public.trainings where id=p_training and owner_id=auth.uid()) then raise exception '권한이 없습니다'; end if;
  if length(trim(p_name))<1 or length(p_name)>120 or length(p_code)<8 or length(p_code)>80 then raise exception '이름 또는 확인코드가 올바르지 않습니다'; end if;
  insert into public.participants(training_id,position,full_name,access_hash,sort_order)
- values(p_training,left(p_position,100),left(p_name,120),crypt(p_code,gen_salt('bf')),p_order) returning id into v_id;
+ values(p_training,left(p_position,100),left(p_name,120),extensions.crypt(p_code,extensions.gen_salt('bf')),p_order) returning id into v_id;
  return v_id;
 end $$;
 create or replace function public.public_training(p_token uuid)
@@ -63,7 +63,7 @@ begin
  select id,owner_id,enabled into v_training,v_owner,v_enabled from public.trainings where token=p_token;
  if v_training is null or not v_enabled then return 'CLOSED';end if;
  select id into v_id from public.participants
- where training_id=v_training and full_name=trim(p_name) and access_hash=crypt(p_code,access_hash) limit 1;
+ where training_id=v_training and full_name=trim(p_name) and access_hash=extensions.crypt(p_code,access_hash) limit 1;
  if v_id is null then return 'NO_MATCH'; end if;
  update public.participants set signed_at=now(),signature_data=p_signature where id=v_id and signed_at is null;
  if not found then return 'ALREADY'; end if;
@@ -90,6 +90,8 @@ grant update(position, full_name, sort_order, signed_at, signature_data)
 grant delete on table public.participants to authenticated;
 revoke all on table public.audit_logs from anon, authenticated;
 grant select on table public.audit_logs to authenticated;
+create or replace view public.participant_admin with (security_invoker=true) as
+select id, training_id, position, full_name, sort_order, signed_at, signature_data, created_at from public.participants;
 grant select on table public.participant_admin to authenticated;
 
 -- Server RPC permissions are granted above. Do NOT grant SELECT on access_hash.
