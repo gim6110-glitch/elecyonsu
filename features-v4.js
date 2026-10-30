@@ -202,9 +202,12 @@ $v('mapping').appendChild(mapBtn);
 let mapScale=1,visibleTemplate=null;
 function mapDefaults(t){
  const m=t?.mapping||{};
+ const schoolDefault=!!t&&/대전산업정보고등학교|우리 학교 기본 서명부/.test(t.title||'');
+ const unconfigured=(Number(m.pos)===75&&Number(m.name)===180&&Number(m.sign)===310&&Number(m.start)===170);
+ const school=schoolDefault&&unconfigured;
  return {titleX:+(m.titleX??297),titleY:+(m.titleY??101),dateX:+(m.dateX??197),dateY:+(m.dateY??145),placeX:+(m.placeX??436),placeY:+(m.placeY??145),
- pos:+(m.pos??126),name:+(m.name??187),sign:+(m.sign??255),start:+(m.start??195),step:+(m.step??24.25),offset:+(m.offset??241.3),
- cols:+(m.cols??2),redraw:m.redraw||'no',gridX:+(m.gridX??58),gridY:+(m.gridY??164),gridW:+(m.gridW??482),gridH:+(m.gridH??625)};
+ pos:school?126:+(m.pos??126),name:school?187:+(m.name??187),sign:school?255:+(m.sign??255),start:school?195:+(m.start??195),step:school?24.25:+(m.step??24.25),offset:+(m.offset??241.3),
+ cols:+(m.cols??2),redraw:m.redraw||(school?'yes':'no'),gridX:+(m.gridX??58),gridY:+(m.gridY??164),gridW:+(m.gridW??482),gridH:+(m.gridH??625)};
 }
 async function openVisualMapper(){
  const t=chosen();if(!t||t.kind!=='pdf')return notice('PDF 양식을 선택해야 위치를 설정할 수 있습니다.');
