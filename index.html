@@ -16,7 +16,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 let sb,user,trainings=[],current=null,people=[],templates=[],codeCache={},poll=null;
 const $=id=>document.getElementById(id);
@@ -51,7 +51,7 @@ async function movePerson(id,d){const i=people.findIndex(p=>p.id===id),j=i+d;if(
 async function editTraining(){let title=prompt('연수명',current.title);if(!title)return;let when_text=prompt('일시',current.when_text);if(when_text===null)return;let place=prompt('장소',current.place);if(place===null)return;let page_size=+(prompt('페이지당 인원수 1~200',current.page_size)||30);try{req(await sb.from('trainings').update({title,when_text,place,page_size:Math.min(200,Math.max(1,page_size))}).eq('id',current.id));await openTraining(current.id)}catch(e){err(e)}}
 async function toggleSigning(){try{req(await sb.from('trainings').update({enabled:!current.enabled}).eq('id',current.id));await openTraining(current.id);notice(current.enabled?'서명 접수 중입니다.':'서명 접수가 중지되었습니다.')}catch(e){err(e)}}
 function copyPublicUrl(){navigator.clipboard.writeText($('publicUrl').value).then(()=>notice('서명 링크를 복사했습니다.'),()=>{ $('publicUrl').select();document.execCommand('copy')})}
-function openQr(){let w=window.open('','_blank');if(!w)return;w.document.write('<html><meta charset="utf-8"><title>연수 QR</title><body style="text-align:center;font-family:sans-serif"><h1>'+escapeHtml(current.title)+'</h1>'+ $('qr').innerHTML+'<p>'+escapeHtml(signUrl())+'</p></body></html>');w.document.close()}
+function openQr(){let w=window.open('','_blank');if(!w)return;w.document.write('<html><meta charset="utf-8"><title>연수 QR</title><body style="text-align:center;font-family:sans-serif"><h1>'+escapeHtml(current.title)+'</h1>'+ $('qr').innerHTML+'<p>'+escapeHtml(signUrl())+'</p><script src="enhancements.js"></script></body></html>');w.document.close()}
 function rosterRows(){return people.map((p,i)=>({연번:i+1,직위:p.position,성명:p.full_name,서명:p.signed_at?'완료':'미완료',서명시각:p.signed_at||''}))}
 function workbookDownload(wb,name){download(name,new Blob([XLSX.write(wb,{type:'array',bookType:'xlsx'})],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}))}
 function downloadRoster(){if(!window.XLSX)return notice('엑셀 라이브러리 로드 실패');const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rosterRows()),'명단');workbookDownload(wb,current.title+'_명단.xlsx')}
