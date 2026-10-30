@@ -1,7 +1,6 @@
 -- Required one-time migration for an existing elecyonsu Supabase project.
 -- Run in Supabase SQL Editor before deploying the new no-code registration UI.
 -- Keeps existing participants/signatures and templates intact.
-alter table public.participants alter column access_hash drop not null;
 alter table public.trainings
   add column if not exists selected_template_id uuid references public.templates(id) on delete set null;
 
@@ -16,8 +15,8 @@ begin
  if length(trim(coalesce(p_name,'')))<1 or length(trim(p_name))>120
     or length(trim(coalesce(p_position,'')))<1 or length(trim(p_position))>100
  then raise exception '직급 또는 성명이 올바르지 않습니다'; end if;
- insert into public.participants(training_id, position, full_name,sort_order,access_hash)
- values(p_training,trim(p_position),trim(p_name),greatest(1,p_order),null)
+ insert into public.participants(training_id, position, full_name,sort_order)
+ values(p_training,trim(p_position),trim(p_name),greatest(1,p_order))
  returning id into v_id;
  return v_id;
 end $$;
@@ -59,3 +58,6 @@ grant execute on function public.submit_signature_simple(uuid,text,text,text) to
 -- Remove unused code-based RPC endpoints so the code-based path cannot be used.
 drop function if exists public.add_participant(uuid,text,text,text,integer);
 drop function if exists public.submit_signature(uuid,text,text,text);
+
+-- The legacy confirmation-code hash is no longer used: erase it completely.
+alter table public.participants drop column if exists access_hash;
