@@ -186,7 +186,7 @@ function templatePage(batch,start){
   const y=top+head+rowh*(i+.5);
   for(let side=0;side<2;side++){
    const relative=side*rows+i,person=batch[relative],sequence=start+relative+1;
-   s+=svgText(side?315.7:75,y,sequence,10);
+   if(relative>=capacity)continue;s+=svgText(side?315.7:75,y,sequence,10);
    if(!person)continue;
    s+=svgText(side?367:126,y,person.position,Math.min(10,person.position.length>5?8.5:10));
    s+=svgText(side?427:186.6,y,person.full_name,Math.min(10,person.full_name.length>5?8.2:10));
