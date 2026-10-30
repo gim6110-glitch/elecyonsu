@@ -41,8 +41,8 @@ document.body.insertAdjacentHTML('beforeend',`
       <label for="dlgWhen">일시 *</label><input id="dlgWhen" required placeholder="예: 2026. 11. 2.(월) 14:00">
       <label for="dlgPlace">장소 *</label><input id="dlgPlace" required placeholder="예: 미디어실">
       <label for="dlgSize">페이지당 인원수</label>
-      <select id="dlgSize"><option value="50">50명 (학교 기본 양식)</option></select>
-      <div class="modal-note">제공된 학교 서명부는 A4 세로, 1페이지 50명(왼쪽 25명·오른쪽 25명) 양식입니다.</div>
+      <input id="dlgSize" type="number" min="1" max="50" value="50" required><label for="dlgTemplate">등록부 출력 양식</label><select id="dlgTemplate"><option value="">기본 양식 (자동 조절)</option></select>
+      <div class="modal-note">A4 한 페이지는 가독성을 위해 최대 50명까지 설정할 수 있습니다. 업로드한 원본 PDF의 표는 고정되어 있어 별도 위치 매핑이 필요할 수 있습니다.</div>
       <div class="dialog-footer"><button type="button" class="alt" id="dlgCancel">취소</button><button type="submit" id="dlgSave">만들기</button></div>
     </form>
   </div>
@@ -62,24 +62,24 @@ dialog.addEventListener('click',e=>{if(e.target===dialog)closeDialog()});
 window.newTraining=function(){
  editingId=null;D.getElementById('appDialogTitle').textContent='새 연수 만들기';
  D.getElementById('dlgSave').textContent='만들기';
- dTitle.value='';dWhen.value='';dPlace.value='';
+ dTitle.value='';dWhen.value='';dPlace.value='';$('dlgSize').value=50;
  dialog.classList.add('active');dTitle.focus();
 };
 window.editTraining=function(){
  if(!current)return;
  editingId=current.id;D.getElementById('appDialogTitle').textContent='연수 정보 수정';
  D.getElementById('dlgSave').textContent='저장';
- dTitle.value=current.title||'';dWhen.value=current.when_text||'';dPlace.value=current.place||'';
+ dTitle.value=current.title||'';dWhen.value=current.when_text||'';dPlace.value=current.place||'';$('dlgSize').value=Math.min(50,Math.max(1,current.page_size||50));
  dialog.classList.add('active');dTitle.focus();
 };
 D.getElementById('trainingForm').addEventListener('submit',async(e)=>{
  e.preventDefault();const title=dTitle.value.trim(),when_text=dWhen.value.trim(),place=dPlace.value.trim();
- if(!title||!when_text||!place)return;
+ if(!title||!when_text||!place)return;const page_size=Math.floor(Number($('dlgSize').value));if(!Number.isInteger(page_size)||page_size<1||page_size>50)return notice('인원수는 1~50명으로 설정하세요.');const selected_template_id=$('dlgTemplate').value||null;
  let btn=D.getElementById('dlgSave');btn.disabled=true;
  try{
   if(editingId){
     const id=editingId;
-    req(await sb.from('trainings').update({title,when_text,place,page_size:50}).eq('id',id));
+    req(await sb.from('trainings').update({title,when_text,place,page_size,selected_template_id}).eq('id',id));
     closeDialog();await openTraining(id);notice('연수 정보가 수정되었습니다.');
   }else{
     const t=req(await sb.from('trainings').insert({owner_id:user.id,title,when_text,place,page_size:50}).select().single());
@@ -164,7 +164,7 @@ function svgText(x,y,text,size=11,weight='normal',extra=''){
 }
 function templatePage(batch,start){
  // 업로드된 양식.pdf의 실제 A4 595×841 좌표에 맞춘 표 재구성. 25행×2단.
- const col=[58,92.2,160.8,212.4,298.6,332.8,401.2,452.8,539.7],top=164.3,head=19.1,rowh=24.25;
+ const capacity=Math.min(50,Math.max(1,Number(current.page_size)||50)),rows=Math.ceil(capacity/2);const col=[58,92.2,160.8,212.4,298.6,332.8,401.2,452.8,539.7],top=164.3,head=19.1,rowh=606.25/rows;
  let s='<svg viewBox="0 0 595 841" xmlns="http://www.w3.org/2000/svg" aria-label="학교 전자 연수등록부 양식">';
  s+='<rect x="56.5" y="73.4" width="240.7" height="3.1" fill="#00a9ff"/><rect x="297.2" y="73.4" width="241.2" height="3.1" fill="#ffcf0d"/>';
  s+='<rect x="56.5" y="118.5" width="240.7" height="3.2" fill="#45a000"/><rect x="297.2" y="118.5" width="241.2" height="3.2" fill="#ff481e"/>';
@@ -175,17 +175,17 @@ function templatePage(batch,start){
  s+=svgText(77.4,144.4,'일시',11,'bold')+svgText(314.3,144.4,'장소',11,'bold');
  s+=svgText(197,144.4,current.when_text,11)+svgText(436,144.4,current.place,11);
  // header and table grid
- s+='<rect x="58" y="'+top+'" width="481.7" height="'+(head+25*rowh)+'" fill="none" stroke="#111" stroke-width="1.2"/>';
+ s+='<rect x="58" y="'+top+'" width="481.7" height="'+(head+rows*rowh)+'" fill="none" stroke="#111" stroke-width="1.2"/>';
  s+='<rect x="58" y="'+top+'" width="481.7" height="'+head+'" fill="#f0f0f0"/>';
- for(const x of col.slice(1,-1))s+='<line x1="'+x+'" y1="'+top+'" x2="'+x+'" y2="'+(top+head+25*rowh)+'" stroke="#111" stroke-width=".9"/>';
+ for(const x of col.slice(1,-1))s+='<line x1="'+x+'" y1="'+top+'" x2="'+x+'" y2="'+(top+head+rows*rowh)+'" stroke="#111" stroke-width=".9"/>';
  s+='<line x1="58" y1="'+(top+head)+'" x2="539.7" y2="'+(top+head)+'" stroke="#111" stroke-width="1.1"/>';
- for(let i=1;i<=25;i++){let y=(top+head+i*rowh).toFixed(2);s+='<line x1="58" y1="'+y+'" x2="539.7" y2="'+y+'" stroke="#111" stroke-width=".77"/>'}
+ for(let i=1;i<=rows;i++){let y=(top+head+i*rowh).toFixed(2);s+='<line x1="58" y1="'+y+'" x2="539.7" y2="'+y+'" stroke="#111" stroke-width=".77"/>'}
  const headers=[['연번',75],['직급',126],['성명',186.6],['서명',255.5],['연번',315.7],['직급',367],['성명',427],['서명',496.2]];
  headers.forEach(v=>s+=svgText(v[1],173.9,v[0],11,'bold'));
- for(let i=0;i<25;i++){
+ for(let i=0;i<rows;i++){
   const y=top+head+rowh*(i+.5);
   for(let side=0;side<2;side++){
-   const relative=side*25+i,person=batch[relative],sequence=start+relative+1;
+   const relative=side*rows+i,person=batch[relative],sequence=start+relative+1;
    s+=svgText(side?315.7:75,y,sequence,10);
    if(!person)continue;
    s+=svgText(side?367:126,y,person.position,Math.min(10,person.position.length>5?8.5:10));
@@ -199,8 +199,8 @@ function templatePage(batch,start){
  return '<article class="paper-sheet">'+s+'</article>';
 }
 window.printMarkup=function(){
- const groups=Math.max(1,Math.ceil(people.length/50)),arr=[];
- for(let k=0;k<groups;k++)arr.push(templatePage(people.slice(k*50,k*50+50),k*50));
+ const capacity=Math.min(50,Math.max(1,Number(current.page_size)||50)),groups=Math.max(1,Math.ceil(people.length/capacity)),arr=[];
+ for(let k=0;k<groups;k++)arr.push(templatePage(people.slice(k*capacity,k*capacity+capacity),k*capacity));
  return arr.join('');
 };
 window.previewPrint=function(){
