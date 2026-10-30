@@ -18,22 +18,26 @@ const css=D.createElement('style');css.textContent=`
 @media(max-width:600px){.mapFields{grid-template-columns:1fr}}
 `;D.head.append(css);
 // Delete all confirmation-code controls in the public signature page.
-const signName=$v('signName');
-const signCode=$v('signCode');
-if(signCode){
- const label=signCode.previousElementSibling;
+const oldCodeField=$v('signCode');
+if(oldCodeField){
+ const label=oldCodeField.previousElementSibling;
  if(label&&label.tagName==='LABEL')label.textContent='직급 / 직위';
- signCode.id='signPosition';signCode.placeholder='예: 교사';signCode.removeAttribute('autocomplete');
- const hint=signCode.nextElementSibling;
- if(hint)hint.textContent='별도 확인코드 없이 서명합니다. 본인 서명임을 확인하고 제출하세요. 다른 사람을 대신해 서명해서는 안 됩니다.';
- const canvas=$v('signcanvas');
- canvas.insertAdjacentHTML('beforebegin','<label style="display:flex;align-items:center;gap:8px;margin:12px 0;font-weight:400"><input id="selfConfirm" type="checkbox" style="width:19px;margin:0"> 본인이 직접 작성한 서명임을 확인합니다.</label>');
+ oldCodeField.id='signPosition';oldCodeField.placeholder='예: 교사';
+ const hint=oldCodeField.nextElementSibling;
+ if(hint)hint.textContent='별도 확인코드 없이 본인이 직접 서명해 주세요.';
+}
+if(!$v('selfConfirm')){
+ $v('signcanvas').insertAdjacentHTML('beforebegin','<label style="display:flex;align-items:center;gap:8px;margin:12px 0;font-weight:400"><input id="selfConfirm" type="checkbox" style="width:19px;margin:0"> 본인이 직접 작성한 서명임을 확인합니다.</label>');
 }
 // Use new restricted server functions. Revoke code-based endpoints in migration.
+let cachedTrainingId=null,cachedOrder=0;
 window.addPerson=async function(position,name){
+ if(cachedTrainingId!==current.id){cachedTrainingId=current.id;cachedOrder=0}
+ if(!cachedOrder)cachedOrder=(people.length?Math.max(...people.map(p=>Number(p.sort_order)||0)):0);
+
  const value=String(name||'').trim(),job=String(position||'교사').trim();
  if(!value)throw Error('성명을 입력하세요');
- const order=(people.length?Math.max(...people.map(p=>Number(p.sort_order)||0)):0)+1;
+ const order=++cachedOrder;
  req(await sb.rpc('add_participant_simple',{p_training:current.id,p_position:job,p_name:value,p_order:order}));
  return null;
 };
@@ -161,7 +165,7 @@ window.fillTemplateOptions=function(){
  origChoose();noSave=false;
 };
 const oldHome=window.showHome;
-window.showHome=async function(){selected.clear();await oldHome()};
+window.showHome=async function(){selected.clear();cachedTrainingId=null;cachedOrder=0;await oldHome()};
 // Visual PDF template mapping setup.
 const mapUI=`
 <div id="pdfMappingDialog" role="dialog" aria-modal="true">
