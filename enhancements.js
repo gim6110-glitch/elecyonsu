@@ -22,7 +22,9 @@ const CSS = `
 #detail table button{min-width:27px}
 @page{size:A4;margin:0}
 @media print{
- body>header,body>main,#appDialogRoot,#paperPreviewRoot{display:none!important}
+ body>header,#appDialogRoot,#paperPreviewRoot{display:none!important}
+ body>main.wrap:not(#printArea){display:block!important;margin:0!important;padding:0!important;max-width:none!important;width:100%!important}
+ body>main.wrap> :not(#printArea){display:none!important}
  #printArea{display:block!important;position:static!important;margin:0!important;padding:0!important}
  .paper-sheet{width:210mm;height:297mm;box-shadow:none!important;margin:0;page-break-after:always;break-after:page}
  .paper-sheet:last-child{page-break-after:auto;break-after:auto}
