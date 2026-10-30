@@ -296,6 +296,17 @@ window.previewPrint=async function(){
 // If someone changes the template at detail view, the new selection now persists.
 const p=$v('mapping');p.insertAdjacentHTML('afterbegin','<div class="template-note">선택한 학교 양식은 현재 연수에 저장됩니다. 다른 학교 PDF는 “PDF 양식 위치 설정”에서 해당 서식의 입력 위치를 맞춰 주세요.</div>');
 
+// Keep the visual PDF mapping settings when the quick mapping fields are saved.
+window.saveMapping=async function(){
+ const t=chosen();if(!t)return notice('양식을 선택해 주세요.');
+ const existing=t.mapping||{};
+ const x=val=>t.kind==='pdf'?Number(val):String(val||'').trim().toUpperCase();
+ const next={...existing,pos:x($v('mapPos').value),name:x($v('mapName').value),
+   sign:x($v('mapSign').value),start:Number($v('mapStart').value),step:Number($v('mapStep').value)};
+ if(!next.step||next.step<1)return notice('행 간격을 확인해 주세요.');
+ try{req(await sb.from('templates').update({mapping:next}).eq('id',t.id));t.mapping=next;notice('양식의 입력 위치가 저장되었습니다.')}catch(e){err(e)}
+};
+
 /* Excel export includes actual PNG signatures, preserving uploaded XLSX workbook when possible. */
 const oldExport=window.exportCustom;
 window.exportCustom=async function(format){
