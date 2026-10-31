@@ -310,6 +310,15 @@ window.saveMapping=async function(){
  try{req(await sb.from('templates').update({mapping:next}).eq('id',t.id));t.mapping=next;notice('양식의 입력 위치가 저장되었습니다.')}catch(e){err(e)}
 };
 
+window.downloadBlankRosterTemplate=function(){
+ if(!window.XLSX)return notice('Excel 라이브러리가 로딩되지 않았습니다.');
+ const book=XLSX.utils.book_new();
+ const sheet=XLSX.utils.aoa_to_sheet([['직급','성명'],['교사','']]);
+ sheet['!cols']=[{wch:18},{wch:24}];
+ XLSX.utils.book_append_sheet(book,sheet,'명단');
+ workbookDownload(book,'연수명단_빈양식.xlsx');
+};
+
 /* Excel export includes actual PNG signatures, preserving uploaded XLSX workbook when possible. */
 const oldExport=window.exportCustom;
 window.exportCustom=async function(format){
