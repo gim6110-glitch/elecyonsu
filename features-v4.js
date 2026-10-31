@@ -283,7 +283,7 @@ async function customPdfPreview(t){
       try{const im=await paintImage(p.signature_data);const ratio=Math.min((m.gridW/cols)*.28/im.width,Math.min(step*.78,20)/im.height);g.drawImage(im,xs-im.width*ratio/2,y-im.height*ratio/2,im.width*ratio,im.height*ratio)}catch(e){console.warn(e)}
     }
   }
-  g.restore();parts.push('<article class="paper-sheet" style="width:'+w+'px;height:'+h+'px"><img style="display:block;width:100%;height:100%" alt="서명부 '+(pg+1)+'페이지" src="'+c.toDataURL('image/png')+'"></article>');
+  g.restore();parts.push('<article class="paper-sheet" style="--page-ratio:'+w+'/'+h+';width:'+w+'px;height:'+h+'px"><img style="display:block;width:100%;height:100%" alt="서명부 '+(pg+1)+'페이지" src="'+c.toDataURL('image/png')+'"></article>');
  }
  return parts.join('');
 }
