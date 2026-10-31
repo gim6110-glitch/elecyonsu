@@ -325,4 +325,36 @@ document.addEventListener('keydown',e=>{
  if(e.key!=='Escape')return;
  ['participantModal','previousRosterDialog','pdfMappingDialog','appDialogRoot','paperPreviewRoot'].forEach(id=>byId(id)?.classList.remove('active'));
 });
+
+/* PDF template field markers for visual placement, with no automatic recognition claims. */
+const mapCanvas=byId('templateCanvas');
+if(mapCanvas&&mapCanvas.parentElement){
+ const wrap=document.createElement('div');wrap.style.cssText='position:relative;width:max-content;max-width:100%;margin:10px auto';
+ mapCanvas.parentNode.insertBefore(wrap,mapCanvas);wrap.append(mapCanvas);
+ const overlay=document.createElement('div');overlay.id='mapMarkers';overlay.style.cssText='position:absolute;inset:0;pointer-events:none;overflow:hidden';wrap.append(overlay);
+ const fields=[['title','연수명','#1e40af'],['date','일시','#047857'],['place','장소','#7c3aed'],['pos','직급','#a16207'],['name','성명','#be123c'],['sign','서명','#0e7490']];
+ function markerRefresh(){
+  const pageW=Number(mapCanvas.dataset.pageWidth),pageH=Number(mapCanvas.dataset.pageHeight);
+  if(!pageW||!pageH||!mapCanvas.width||!mapCanvas.height)return;
+  overlay.innerHTML='';
+  fields.forEach(([f,label,color])=>{
+   const prop=(f==='title'||f==='date'||f==='place')?f+'X':f;
+   const x=Number(byId('m_'+prop)?.value);
+   const y=Number(byId('m_'+((f==='title'||f==='date'||f==='place')?f+'Y':'start'))?.value);
+   if(!Number.isFinite(x)||!Number.isFinite(y))return;
+   const el=document.createElement('span');el.textContent=label;
+   el.style.cssText='position:absolute;transform:translate(-50%,-50%);background:'+color+';color:white;font:11px sans-serif;padding:2px 5px;border-radius:5px;white-space:nowrap;opacity:.9;left:'+(x/pageW*100)+'%;top:'+(y/pageH*100)+'%';
+   overlay.appendChild(el);
+  });
+ }
+ const obs=new MutationObserver(markerRefresh);
+ obs.observe(mapCanvas,{attributes:true,attributeFilter:['width','height','data-page-width','data-page-height']});
+ mapCanvas.addEventListener('click',()=>queueMicrotask(markerRefresh));
+ byId('pdfMappingDialog').querySelectorAll('input,select').forEach(x=>x.addEventListener('input',markerRefresh));
+}
+const fillOptionsOld=window.fillTemplateOptions;
+window.fillTemplateOptions=function(){
+ fillOptionsOld();
+ renderExcelPreview().catch(e=>console.warn('Excel template preview',e));
+};
 })();
