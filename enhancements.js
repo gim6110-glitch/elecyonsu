@@ -164,7 +164,7 @@ function svgText(x,y,text,size=11,weight='normal',extra=''){
 }
 function templatePage(batch,start){
  // 업로드된 양식.pdf의 실제 A4 595×841 좌표에 맞춘 표 재구성. 25행×2단.
- const capacity=Math.min(50,Math.max(1,Number(current.page_size)||50)),rows=Math.ceil(capacity/2);const col=[58,92.2,160.8,212.4,298.6,332.8,401.2,452.8,539.7],top=164.3,head=19.1,rowh=606.25/rows;
+ const capacity=Math.min(50,Math.max(1,Number(current.page_size)||50)),rows=Math.ceil(capacity/2);const col=[58,92.2,160.8,212.4,298.6,332.8,401.2,452.8,539.7],top=164.3,head=19.1,rowh=Math.min(30,606.25/rows);
  let s='<svg viewBox="0 0 595 841" xmlns="http://www.w3.org/2000/svg" aria-label="학교 전자 연수등록부 양식">';
  s+='<rect x="56.5" y="73.4" width="240.7" height="3.1" fill="#00a9ff"/><rect x="297.2" y="73.4" width="241.2" height="3.1" fill="#ffcf0d"/>';
  s+='<rect x="56.5" y="118.5" width="240.7" height="3.2" fill="#45a000"/><rect x="297.2" y="118.5" width="241.2" height="3.2" fill="#ff481e"/>';
