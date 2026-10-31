@@ -220,7 +220,7 @@ async function openVisualMapper(){
   const pdf=await pdfjsLib.getDocument({data:baseBytes(t.file_data)}).promise;
   const page=await pdf.getPage(1),view=page.getViewport({scale:1});
   mapScale=Math.min(1,780/view.width);
-  const canvas=$v('templateCanvas');canvas.width=Math.floor(view.width*mapScale);canvas.height=Math.floor(view.height*mapScale);
+  const canvas=$v('templateCanvas');canvas.dataset.pageWidth=String(view.width);canvas.dataset.pageHeight=String(view.height);canvas.width=Math.floor(view.width*mapScale);canvas.height=Math.floor(view.height*mapScale);
   await page.render({canvasContext:canvas.getContext('2d'),viewport:page.getViewport({scale:mapScale})}).promise;
  }catch(e){err(e)}
 }
