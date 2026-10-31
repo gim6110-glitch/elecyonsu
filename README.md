@@ -1,3 +1,13 @@
+# ✅ v5 업데이트 (2026-10-31)
+
+**기존 사용자 필수:** [v5 적용 방법 및 테스트](./UPGRADE_V5.md)를 먼저 열어 **[migration_v5_bulk_realtime.sql](./migration_v5_bulk_realtime.sql)** 내용을 Supabase SQL Editor에서 실행하세요. 그 다음 GitHub→Netlify 자동 배포 결과를 확인합니다.
+
+추가 기능: 연수 검색·복제·삭제, 명단 묶음 등록과 이전 연수 명단 복사, 모바일·태블릿 카드뷰, PDF 필드 배치 보조 표시, Excel 서명 이미지 포함 출력, Realtime 서명 상태 구독, 참석자 중앙 수정 모달.
+
+**주의:** 사용자가 제외한 보안 개선 1~3번은 이번에 건드리지 않았습니다. 실명·서명을 공식 문서로 처리하기 전 학교 보안/개인정보 운영 기준 검토가 필요합니다.
+
+---
+
 # 업데이트 안내 (v4, 2026-10-30)
 
 **기존 Supabase 프로젝트 이용자는 반드시 [UPGRADE_V4.md](./UPGRADE_V4.md)를 먼저 읽고 [migration_20261030_no_code_templates.sql](./migration_20261030_no_code_templates.sql)을 SQL Editor에서 실행하세요.** GitHub 배포와 DB 함수 변경은 별개입니다.
