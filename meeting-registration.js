@@ -12,7 +12,7 @@ style.textContent=[
 '.meeting-sheet{width:595px;height:841px;background:#fff;display:block;margin:0 auto;box-shadow:0 1px 6px #13203e28}',
 '.meeting-sheet svg{width:100%;height:100%;display:block}',
 '#pvPages .meeting-sheet{width:min(595px,calc(100vw - 42px))!important;height:auto!important;aspect-ratio:595/841;flex:none}',
-'@media print{#printArea .meeting-sheet{width:210mm!important;height:297mm!important;max-width:none!important;margin:0!important;padding:0!important;box-shadow:none!important;break-after:page;page-break-after:always}#printArea .meeting-sheet svg{width:100%!important;height:100%!important}}'
+'@media print{#printArea .meeting-sheet{width:210mm!important;height:297mm!important;max-width:none!important;margin:0!important;padding:0!important;box-shadow:none!important;break-after:page;page-break-after:always}#printArea .meeting-sheet:last-child{break-after:auto!important;page-break-after:auto!important}#printArea .meeting-sheet svg{width:100%!important;height:100%!important}}'
 ].join('\n');
 D.head.appendChild(style);
 const note=D.createElement('p');note.id='meetingTypeHelp';sel.insertAdjacentElement('afterend',note);
