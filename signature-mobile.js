@@ -5,6 +5,7 @@ const D=document;
 const form=D.getElementById('publicSign');
 if(!form) return;
 const $=id=>D.getElementById(id);
+const categoryLabel=()=>D.body.dataset.registrationType==='meeting'?'구분':'직급';
 const html=
  '<div id="sigStatusOverlay" class="sig-overlay"><section class="sig-card" role="dialog" aria-modal="true" aria-labelledby="sigStatusHeading">'+
   '<div id="sigStatusIcon" class="sig-icon">✓</div>'+
@@ -150,8 +151,8 @@ $('sigEditSave').onclick=async function(){
   }
   const labels={CLOSED:'서명 접수가 종료되었습니다.',INVALID_IMAGE:'서명 이미지 형식을 확인해 주세요.',
    NOT_SIGNED:'담당자가 서명을 초기화했습니다. 원래 화면에서 새로 서명해 주세요.',
-   NO_MATCH:'명단에 등록된 성명·직급과 일치하지 않습니다.',
-   AMBIGUOUS:'동명이인과 직급이 중복되어 관리자 확인이 필요합니다.'};
+   NO_MATCH:'명단에 등록된 성명·'+categoryLabel()+'과 일치하지 않습니다.',
+   AMBIGUOUS:'동명이인과 '+categoryLabel()+'이 중복되어 관리자 확인이 필요합니다.'};
   $('sigEditError').textContent=labels[status]||'서명을 수정하지 못했습니다. 다시 시도해 주세요.';
  }catch(e){console.error(e);$('sigEditError').textContent=e?.message||'서명 수정 중 오류가 발생했습니다.';}
  finally{saving=false;this.disabled=false;this.textContent='수정 완료';}
@@ -159,7 +160,7 @@ $('sigEditSave').onclick=async function(){
 window.submitSign=async function(){
  if(submitting)return;
  const name=$('signName').value.trim(),position=$('signPosition').value.trim();
- if(!name||!position)return notice('성명과 직급을 입력해 주세요.');
+ if(!name||!position)return notice('성명과 '+categoryLabel()+'을(를) 입력해 주세요.');
  if(!$('selfConfirm')?.checked)return notice('본인 직접 서명 확인에 동의해 주세요.');
  if(!drawn)return notice('손글씨 서명을 작성해 주세요.');
  const token=new URLSearchParams(location.search).get('sign');
@@ -178,8 +179,8 @@ window.submitSign=async function(){
    showSuccess(false,saved);return;
   }
   if(status==='ALREADY'){handleDuplicate({token,name,position});return;}
-  const labels={NO_MATCH:'명단과 일치하는 성명·직급이 없습니다. 담당자에게 확인해 주세요.',
-   AMBIGUOUS:'같은 성명과 직급의 참석자가 여러 명입니다. 담당자에게 문의해 주세요.',
+  const labels={NO_MATCH:'명단과 일치하는 성명·'+categoryLabel()+'이 없습니다. 담당자에게 확인해 주세요.',
+   AMBIGUOUS:'같은 성명과 '+categoryLabel()+'의 참석자가 여러 명입니다. 담당자에게 문의해 주세요.',
    CLOSED:'서명 접수가 종료되었습니다.',
    INVALID_IMAGE:'서명 크기 또는 형식이 올바르지 않습니다.',
    INVALID_TOKEN:'안전한 서명 처리에 실패했습니다. 페이지를 새로고침해 주세요.'};
