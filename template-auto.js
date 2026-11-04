@@ -338,6 +338,59 @@ async function renderAutoPdf(t){
  }
  return results.join('');
 }
+// When administrators correct detected coordinates in the existing visual mapper,
+// keep automatic rendering synchronized with those manual corrections.
+function correctPdfBlocks(template,updated){
+ const old=template.mapping||{};
+ const first=old.pdfBlocks?.[0];
+ if(!first)return {...old,...updated};
+ const delta={
+  pos:num(updated.pos)-first.pos,name:num(updated.name)-first.name,
+  sign:num(updated.sign)-first.sign,start:num(updated.start)-first.start
+ };
+ const step=num(updated.step)||first.step;
+ const blocks=old.pdfBlocks.map((b,i)=>({
+  ...b,pos:b.pos+delta.pos,name:b.name+delta.name,
+  sign:b.sign+delta.sign,start:b.start+delta.start,step
+ }));
+ if(blocks.length>1&&num(updated.offset)>0){
+  const gap=num(updated.offset)-(old.pdfBlocks[1].pos-old.pdfBlocks[0].pos);
+  blocks.forEach((b,i)=>{if(i){b.pos+=gap*i;b.name+=gap*i;b.sign+=gap*i;if(b.num!=null)b.num+=gap*i}});
+ }
+ blocks.forEach((b,i)=>{if(b.num!=null)b.num+=delta.pos});
+ return {...old,...updated,pdfBlocks:blocks};
+}
+$('saveMapVisual')?.addEventListener('click',async function(ev){
+ const t=templates.find(x=>x.id===$('chosenTemplate').value);
+ if(t?.mapping?.autoMode!=='pdf')return;
+ ev.preventDefault();ev.stopImmediatePropagation();
+ const keys=['titleX','titleY','dateX','dateY','placeX','placeY',
+  'pos','name','sign','start','step','offset','gridX','gridY','gridW','gridH','cols'];
+ const next={};
+ for(const k of keys)if($('m_'+k))next[k]=num($('m_'+k).value);
+ next.redraw=$('m_redraw')?.value||'no';
+ if(next.step<8||next.pos<0||next.name<=next.pos||next.sign<=next.name)return notice('직위·성명·서명 위치 및 행 간격을 확인하세요.');
+ const saved=correctPdfBlocks(t,next);
+ try{
+  req(await sb.from('templates').update({mapping:saved}).eq('id',t.id));
+  t.mapping=saved;$('pdfMappingDialog')?.classList.remove('active');
+  notifyStatus('보정한 좌표를 원본 PDF 양식에 저장했습니다. 미리보기에 바로 적용됩니다.',true);
+ }catch(e){console.error(e);notifyStatus('위치 수정 저장 실패: '+(e.message||e));}
+},true);
+const oldSaveMapping=window.saveMapping;
+window.saveMapping=async function(){
+ const t=templates.find(x=>x.id===$('chosenTemplate').value);
+ if(t?.mapping?.autoMode!=='pdf')return oldSaveMapping();
+ const next={pos:num($('mapPos').value),name:num($('mapName').value),
+   sign:num($('mapSign').value),start:num($('mapStart').value),step:num($('mapStep').value)};
+ if(next.step<8||next.pos<=0||next.name<=next.pos||next.sign<=next.name)
+  return notice('위치나 행 간격을 확인해 주세요.');
+ const mapped=correctPdfBlocks(t,next);
+ try{req(await sb.from('templates').update({mapping:mapped}).eq('id',t.id));
+  t.mapping=mapped;notifyStatus('보정된 PDF 입력 위치를 저장했습니다.',true);}
+ catch(e){console.error(e);notifyStatus('보정 위치 저장 실패: '+(e.message||e));}
+};
+
 const oldPreview=window.previewPrint;
 window.previewPrint=async function(){
  const t=templates.find(x=>x.id===current?.selected_template_id);
