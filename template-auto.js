@@ -295,6 +295,10 @@ async function renderAutoPdf(t){
  const capacity=Math.max(1,Math.min(Number(current?.page_size)||50,
   blocks.reduce((n,b)=>n+b.rows,0)));
  const pages=Math.max(1,Math.ceil(people.length/capacity));
+ const sizeStyle=D.getElementById('smartTemplatePrintPage')||D.createElement('style');
+ sizeStyle.id='smartTemplatePrintPage';
+ sizeStyle.textContent='@media print{@page{size:'+(w*25.4/72).toFixed(2)+'mm '+(h*25.4/72).toFixed(2)+'mm;margin:0}}';
+ if(!sizeStyle.isConnected)D.head.appendChild(sizeStyle);
  const results=[];
  for(let p=0;p<pages;p++){
   const c=D.createElement('canvas');c.width=Math.ceil(viewport.width);c.height=Math.ceil(viewport.height);
@@ -395,6 +399,15 @@ const oldPreview=window.previewPrint;
 window.previewPrint=async function(){
  const t=templates.find(x=>x.id===current?.selected_template_id);
  if(!t||t.kind!=='pdf'||t.mapping?.autoMode!=='pdf'){
+  D.getElementById('smartTemplatePrintPage')?.remove();
+  if(t?.kind==='pdf'){
+   const m=t.mapping||{};
+   const manual=!!(m.titleX!=null&&m.gridX!=null&&m.start!=null);
+   if(!manual){
+    notifyStatus('이 PDF는 표 위치가 확정되지 않았습니다. 먼저 「양식 자동 위치 인식」을 누르거나 「PDF 양식 위치 설정」에서 좌표를 지정해 주세요.');
+    return;
+   }
+  }
   return oldPreview();
  }
  const root=$('paperPreviewRoot'),body=$('pvPages');
