@@ -125,7 +125,21 @@ async function uploadRoster(e){try{const f=e.target.files[0];if(!f)return;const 
 async function copyRoster(){const opts=trainings.filter(t=>t.id!==current.id);if(!opts.length)return notice('이전 연수가 없습니다');let info=opts.map((t,i)=>(i+1)+'. '+t.title).join('\n');let n=+(prompt('복사할 연수 번호를 선택하세요\n'+info)||0);if(!opts[n-1])return;try{const arr=req(await sb.from('participant_admin').select('position,full_name').eq('training_id',opts[n-1].id));const codes=[];for(const p of arr){codes.push([p.full_name,await addPerson(p.position,p.full_name)])}download('복사된_명단_확인코드.csv',new Blob(['\ufeff성명,확인코드\n'+codes.map(v=>v.join(',')).join('\n')],{type:'text/csv;charset=utf-8'}));await loadPeople()}catch(e){err(e)}}
 function printMarkup(){const n=Math.min(200,Math.max(1,current.page_size||30)),pages=Math.max(1,Math.ceil(people.length/n));let result='';for(let page=0;page<pages;page++){const group=people.slice(page*n,(page+1)*n),half=Math.ceil(n/2);let rows='';for(let i=0;i<half;i++){const a=group[i],b=group[i+half];rows+='<tr>'+[a,b].map((p,j)=>'<td>'+(p?(page*n+i+j*half+1):'')+'</td><td>'+escapeHtml(p?.position)+'</td><td>'+escapeHtml(p?.full_name)+'</td><td>'+(p?.signature_data?'<img src="'+p.signature_data+'">':'')+'</td>').join('')+'</tr>'}result+='<section class="sheet"><h1 style="text-align:center;border-top:7px solid #7161ed;padding-top:25px">'+escapeHtml(current.title)+'</h1><p>일시: '+escapeHtml(current.when_text)+'　 장소: '+escapeHtml(current.place)+'</p><table class="printTable"><thead><tr><th>연번</th><th>직위</th><th>성명</th><th>서명</th><th>연번</th><th>직위</th><th>성명</th><th>서명</th></tr></thead><tbody>'+rows+'</tbody></table></section>'}return result}
 function previewPrint(){$('printArea').innerHTML=printMarkup();window.print()}
-async function publicInit(token){show('publicSign');$('publicInfo').textContent='연수 정보를 확인하고 있습니다.';try{const data=req(await sb.rpc('public_training',{p_token:token}));if(!data?.length){$('publicInfo').textContent='유효하지 않은 서명 주소입니다.';return}const t=data[0];$('publicInfo').innerHTML='<h3>'+escapeHtml(t.title)+'</h3><p>'+escapeHtml(t.when_text)+' · '+escapeHtml(t.place)+'</p>'+(t.enabled?'':'<p class="warning">서명 접수가 종료되었습니다.</p>');if(!t.enabled)$('signcanvas').parentElement.querySelector('button[onclick="submitSign()"]').disabled=true;initCanvas()}catch(e){err(e)}}
+async function publicInit(token){
+ show('publicSign');$('publicInfo').textContent='등록부 정보를 확인하고 있습니다.';
+ try{
+  const data=req(await sb.rpc('public_registration',{p_token:token}));
+  if(!data?.length){$('publicInfo').textContent='유효하지 않은 서명 주소입니다.';return}
+  const t=data[0],meeting=t.registration_type==='meeting';
+  document.body.dataset.registrationType=meeting?'meeting':'training';
+  $('publicSign').querySelector('h2').textContent=meeting?'회의 참석자 전자서명':'연수 참석자 전자서명';
+  const pos=$('signPosition');
+  if(pos){const label=pos.previousElementSibling;if(label&&label.tagName==='LABEL')label.textContent=meeting?'구분':'직급 / 직위';pos.placeholder=meeting?'예: 참석자 / 위원 / 교사':'예: 교사';}
+  $('publicInfo').innerHTML='<h3>'+escapeHtml(t.title)+'</h3><p>'+escapeHtml(t.when_text)+' · '+escapeHtml(t.place)+'</p>'+(t.enabled?'':'<p class="warning">서명 접수가 종료되었습니다.</p>');
+  if(!t.enabled)$('signcanvas').parentElement.querySelector('button[onclick="submitSign()"]').disabled=true;
+  initCanvas();
+ }catch(e){err(e)}
+}
 let ctx,drawn=false,down=false;
 function initCanvas(){const c=$('signcanvas');c.width=Math.round(c.clientWidth*devicePixelRatio);c.height=Math.round(190*devicePixelRatio);ctx=c.getContext('2d');ctx.scale(devicePixelRatio,devicePixelRatio);ctx.strokeStyle='#15243f';ctx.lineWidth=2.5;ctx.lineJoin='round';ctx.lineCap='round';c.addEventListener('pointerdown',e=>{down=true;drawn=true;c.setPointerCapture(e.pointerId);let r=c.getBoundingClientRect();ctx.beginPath();ctx.moveTo(e.clientX-r.left,e.clientY-r.top)});c.addEventListener('pointermove',e=>{if(!down)return;let r=c.getBoundingClientRect();ctx.lineTo(e.clientX-r.left,e.clientY-r.top);ctx.stroke()});c.addEventListener('pointerup',()=>down=false);c.addEventListener('pointercancel',()=>down=false)}
 function clearSign(){if(ctx){const c=$('signcanvas');ctx.clearRect(0,0,c.width,c.height);drawn=false}}
