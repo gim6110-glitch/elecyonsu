@@ -37,6 +37,7 @@ document.body.insertAdjacentHTML('beforeend',`
   <div id="appDialogCard">
     <div class="dialog-head"><h2 id="appDialogTitle">새 연수 만들기</h2><button type="button" class="alt" id="dialogX" aria-label="닫기">×</button></div>
     <form id="trainingForm">
+      <label for="dlgRegistrationType">등록부 종류 *</label><select id="dlgRegistrationType" required><option value="training">연수 등록부</option><option value="meeting">회의 등록부</option></select>
       <label for="dlgTitle">연수명 *</label><input id="dlgTitle" required maxlength="150" placeholder="예: 2026 정보보안 및 개인정보보호 교육">
       <label for="dlgWhen">일시 *</label><input id="dlgWhen" required placeholder="예: 2026. 11. 2.(월) 14:00">
       <label for="dlgPlace">장소 *</label><input id="dlgPlace" required placeholder="예: 미디어실">
@@ -62,28 +63,28 @@ dialog.addEventListener('click',e=>{if(e.target===dialog)closeDialog()});
 window.newTraining=function(){
  editingId=null;D.getElementById('appDialogTitle').textContent='새 연수 만들기';
  D.getElementById('dlgSave').textContent='만들기';
- dTitle.value='';dWhen.value='';dPlace.value='';$('dlgSize').value=50;
+ dTitle.value='';dWhen.value='';dPlace.value='';$('dlgSize').value=50;$('dlgRegistrationType').value='training';
  dialog.classList.add('active');dTitle.focus();
 };
 window.editTraining=function(){
  if(!current)return;
  editingId=current.id;D.getElementById('appDialogTitle').textContent='연수 정보 수정';
  D.getElementById('dlgSave').textContent='저장';
- dTitle.value=current.title||'';dWhen.value=current.when_text||'';dPlace.value=current.place||'';$('dlgSize').value=Math.min(50,Math.max(1,current.page_size||50));
+ dTitle.value=current.title||'';dWhen.value=current.when_text||'';dPlace.value=current.place||'';$('dlgRegistrationType').value=current.registration_type==='meeting'?'meeting':'training';$('dlgSize').value=Math.min(50,Math.max(1,current.page_size||50));
  dialog.classList.add('active');dTitle.focus();
 };
 D.getElementById('trainingForm').addEventListener('submit',async(e)=>{
  e.preventDefault();const title=dTitle.value.trim(),when_text=dWhen.value.trim(),place=dPlace.value.trim();
- if(!title||!when_text||!place)return;const page_size=Math.floor(Number($('dlgSize').value));if(!Number.isInteger(page_size)||page_size<1||page_size>50)return notice('인원수는 1~50명으로 설정하세요.');const selected_template_id=$('dlgTemplate').value||null;
+ if(!title||!when_text||!place)return;const registration_type=$('dlgRegistrationType').value==='meeting'?'meeting':'training';const page_size=registration_type==='meeting'?12:Math.floor(Number($('dlgSize').value));if(!Number.isInteger(page_size)||page_size<1||page_size>50)return notice('인원수를 확인하세요.');const selected_template_id=$('dlgTemplate').value||null;
  let btn=D.getElementById('dlgSave');btn.disabled=true;
  try{
   if(editingId){
     const id=editingId;
-    req(await sb.from('trainings').update({title,when_text,place,page_size,selected_template_id}).eq('id',id));
-    closeDialog();await openTraining(id);notice('연수 정보가 수정되었습니다.');
+    req(await sb.from('trainings').update({title,when_text,place,page_size,selected_template_id,registration_type}).eq('id',id));
+    closeDialog();await openTraining(id);notice((registration_type==='meeting'?'회의':'연수')+' 정보가 수정되었습니다.');
   }else{
-    const t=req(await sb.from('trainings').insert({owner_id:user.id,title,when_text,place,page_size:50}).select().single());
-    closeDialog();await openTraining(t.id);notice('연수가 생성되었습니다.');
+    const t=req(await sb.from('trainings').insert({owner_id:user.id,title,when_text,place,page_size,selected_template_id,registration_type}).select().single());
+    closeDialog();await openTraining(t.id);notice((registration_type==='meeting'?'회의':'연수')+' 등록부가 생성되었습니다.');
   }
  }catch(ex){err(ex)}finally{btn.disabled=false}
 });
