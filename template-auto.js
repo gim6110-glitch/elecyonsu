@@ -334,7 +334,7 @@ async function renderAutoPdf(t){
    offset+=n;
   }
   g.restore();
-  results.push('<article class="paper-sheet" style="--page-ratio:'+w+'/'+h+';width:'+w+'px;height:'+h+'px"><img alt="맞춤 서명부 '+(p+1)+'페이지" style="display:block;width:100%;height:100%" src="'+c.toDataURL('image/png')+'"></article>');
+  results.push('<article class="paper-sheet" style="--page-ratio:'+w+'/'+h+';--form-w-mm:'+(w*25.4/72).toFixed(2)+'mm;--form-h-mm:'+(h*25.4/72).toFixed(2)+'mm;width:'+w+'px;height:'+h+'px"><img alt="맞춤 서명부 '+(p+1)+'페이지" style="display:block;width:100%;height:100%" src="'+c.toDataURL('image/png')+'"></article>');
  }
  return results.join('');
 }
