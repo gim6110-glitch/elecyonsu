@@ -1,0 +1,12 @@
+/* Automatic layout detection UI and original-format PDF preview. */
+#autoMapButton{width:100%;min-height:43px;border:1px solid #9dc2ff;color:#21549e;background:#eef5ff;font-size:14px;font-weight:700;margin:8px 0}
+#autoMapStatus{line-height:1.55;overflow-wrap:anywhere}
+#autoMapStatus[data-good="yes"]{color:#126a53!important}
+#autoMapStatus[data-good="no"]{color:#8c501d!important}
+#pvPages .paper-sheet{max-width:calc(100vw - 54px);height:auto;aspect-ratio:var(--page-ratio,595/842);overflow:hidden}
+#pvPages .paper-sheet>img{width:100%!important;height:100%!important;object-fit:fill}
+@media print{
+ #printArea .paper-sheet{box-sizing:border-box;display:block;width:var(--form-w-mm,210mm)!important;height:var(--form-h-mm,297mm)!important;
+  max-width:none!important;aspect-ratio:auto!important;margin:0!important;page-break-after:always;break-after:page;}
+ #printArea .paper-sheet img{width:100%!important;height:100%!important;object-fit:fill!important}
+}
