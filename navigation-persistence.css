@@ -1,0 +1,14 @@
+/* Administrator header controls: top-right on desktop, tablet and mobile. */
+.top-head{max-width:1200px;margin:auto;display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+.top-brand{min-width:0;flex:1}
+#topLogout{flex:none;display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:10px 17px;margin:0;border:1px solid rgba(255,255,255,.65);border-radius:11px;background:rgba(255,255,255,.16);color:#fff;font-size:14px;font-weight:700;white-space:nowrap}
+#topLogout:hover{background:rgba(255,255,255,.26)}
+#topLogout:focus-visible{outline:3px solid #fff;outline-offset:2px}
+#topLogout.hidden{display:none!important}
+@media(max-width:600px){
+ .top-head{gap:8px}
+ .top-brand h1{font-size:19px;line-height:1.32}
+ .top-brand>div{font-size:12px;line-height:1.4}
+ #topLogout{min-height:39px;padding:8px 11px;font-size:12px}
+}
+@media print{#topLogout{display:none!important}}
