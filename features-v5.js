@@ -107,7 +107,7 @@ window.cloneTraining=async function(id){
  if(!confirm('"'+t.title+'" 연수를 복제하시겠습니까? 참석자 명단만 복사하며 기존 서명은 복사하지 않습니다.'))return;
  let created=null;
  try{
-  created=req(await sb.from('trainings').insert({owner_id:user.id,title:t.title+' (복제)',when_text:t.when_text,place:t.place,page_size:t.page_size,selected_template_id:t.selected_template_id||null}).select().single());
+  created=req(await sb.from('trainings').insert({owner_id:user.id,title:t.title+' (복제)',when_text:t.when_text,place:t.place,page_size:t.page_size,selected_template_id:t.selected_template_id||null,registration_type:t.registration_type==='meeting'?'meeting':'training'}).select().single());
   const prior=req(await sb.from('participant_admin').select('position,full_name').eq('training_id',id).order('sort_order'));
   if(prior.length)await importRows(created.id,prior);
   await showHome();notice('연수와 명단을 복제했습니다. 서명은 복사하지 않았습니다.');
