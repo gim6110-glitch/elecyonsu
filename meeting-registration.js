@@ -4,6 +4,7 @@
 const D=document,$=id=>D.getElementById(id),sel=$('dlgRegistrationType');
 if(!sel)return;
 const meeting=()=>current?.registration_type==='meeting';
+const meetingPageSize=()=>Math.min(50,Math.max(1,Math.floor(Number(current?.page_size)||12)));
 const esc=s=>escapeHtml(String(s??''));
 const style=D.createElement('style');
 style.textContent=[
@@ -16,20 +17,20 @@ style.textContent=[
 ].join('\n');
 D.head.appendChild(style);
 const note=D.createElement('p');note.id='meetingTypeHelp';sel.insertAdjacentElement('afterend',note);
-function dialogFields(){
+function dialogFields(switchedType=false){
  const m=sel.value==='meeting',size=$('dlgSize');
  $('dlgTitle').previousElementSibling.textContent=m?'회의명 *':'연수명 *';
  $('dlgTitle').placeholder=m?'예: 2026학년도 교직원 협의회':'예: 2026 정보·AI 교원 연수';
  $('dlgWhen').previousElementSibling.textContent=m?'회의 일시 *':'연수 일시 *';
  $('dlgPlace').previousElementSibling.textContent=m?'회의 장소 *':'연수 장소 *';
- size.disabled=m;if(m)size.value=12;
- size.previousElementSibling.textContent=m?'한 페이지 참석자 수 (12명 고정)':'페이지당 인원수';
+ size.disabled=false;if(m&&switchedType)size.value=12;
+ size.previousElementSibling.textContent=m?'페이지당 인원수 (1~50명)':'페이지당 인원수';
  const op=$('dlgTemplate').querySelector('option[value=""]');
  if(op)op.textContent=m?'회의 등록부 (기본 양식)':'연수 등록부 (기본 양식)';
- note.textContent=m?'첨부 PDF 기준: 회의명·일시·장소 입력 / 연번·성명·구분·서명 / 페이지당 12명':'기존 연수 등록부 양식과 페이지당 인원수 설정을 사용합니다.';
+ note.textContent=m?'회의 등록부는 12명을 기본값으로 하며 1~50명까지 조절할 수 있습니다. 표의 행 높이·글자·서명 크기가 자동 조정됩니다. 30명 이상은 인쇄 가독성을 확인하세요.':'기존 연수 등록부 양식과 페이지당 인원수 설정을 사용합니다.';
  $('appDialogTitle').textContent=$('dlgSave').textContent==='저장'?'등록부 정보 수정':'새 등록부 만들기';
 }
-sel.addEventListener('change',dialogFields);
+sel.addEventListener('change',()=>dialogFields(true));
 const prevNew=window.newTraining,prevEdit=window.editTraining;
 window.newTraining=function(){prevNew();sel.value='training';dialogFields();};
 window.editTraining=function(){prevEdit();sel.value=meeting()?'meeting':'training';dialogFields();};
@@ -56,7 +57,7 @@ window.openTraining=async function(id){
  if(!current||current.id!==id)return;
  const m=meeting();
  D.body.dataset.registrationType=m?'meeting':'training';
- const title=$('detailTitle');if(title){const sub=D.createElement('p');sub.className='muted';sub.textContent=m?'회의 등록부 · 1페이지 12명':'연수 등록부';title.prepend(sub);}
+ const title=$('detailTitle');if(title){const sub=D.createElement('p');sub.className='muted';sub.textContent=m?'회의 등록부 · 페이지당 '+meetingPageSize()+'명':'연수 등록부';title.prepend(sub);}
  const edit=$('detail')?.querySelector('button[onclick="editTraining()"]');if(edit)edit.textContent=m?'회의 정보 수정':'연수 정보 수정';
  const option=$('chosenTemplate')?.querySelector('option[value=""]');if(option)option.textContent=m?'회의 등록부 (기본)':'연수 등록부 (기본)';
  const print=$('detail')?.querySelector('button[onclick="previewPrint()"]');if(print)print.textContent=m?'회의 등록부 인쇄 / PDF 저장':'연수 등록부 인쇄 / PDF 저장';
@@ -97,7 +98,8 @@ function txt(text,x,y,size=11,extra=''){
  return '<text x="'+x+'" y="'+y+'" font-family="Malgun Gothic, Noto Sans CJK KR, sans-serif" fill="#171717" font-size="'+size+'" text-anchor="middle" dominant-baseline="middle" '+extra+'>'+esc(text)+'</text>';
 }
 function meetingSvg(rows,pageIndex){
- const bounds=[52.4,110.82,228.6,408.74,543.07],top=214.45,headH=34.64,rh=46.54,bottom=top+headH+12*rh;
+ const perPage=meetingPageSize();
+ const bounds=[52.4,110.82,228.6,408.74,543.07],top=214.45,headH=34.64,rh=46.54*12/perPage,bottom=top+headH+perPage*rh;
  let html='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 595 841" role="img" aria-label="회의 등록부 '+(pageIndex+1)+'페이지"><rect width="595" height="841" fill="#fff"/>';
  for(const [x1,x2,color] of [[56,297,'#1ba7f3'],[297,539,'#f7c800']])html+=line(x1,89.7,x2,89.7,color,2.9);
  for(const [x1,x2,color] of [[56,297,'#319c00'],[297,539,'#ff4d28']])html+=line(x1,144.6,x2,144.6,color,2.9);
@@ -113,23 +115,26 @@ function meetingSvg(rows,pageIndex){
  html+='<rect x="'+bounds[0]+'" y="'+top+'" width="'+(bounds[4]-bounds[0])+'" height="'+(bottom-top)+'" fill="white" stroke="#111" stroke-width="1.2"/>';
  html+='<rect x="'+bounds[0]+'" y="'+top+'" width="'+(bounds[4]-bounds[0])+'" height="'+headH+'" fill="#eee"/>';
  for(const x of bounds.slice(1,-1))html+=line(x,top,x,bottom,'#171717',.9);
- for(let i=0;i<=12;i++)html+=line(bounds[0],top+headH+i*rh,bounds[4],top+headH+i*rh,'#171717',.8);
+ for(let i=0;i<=perPage;i++)html+=line(bounds[0],top+headH+i*rh,bounds[4],top+headH+i*rh,'#171717',.8);
  for(const [label,x] of [['연번',81.7],['성명',169.7],['구분',318.7],['서명',475.9]])html+=txt(label,x,top+headH/2,11.8);
- for(let i=0;i<12;i++){
+ const fontSize=Math.min(11.8,Math.max(7,rh*.68));
+ const signH=Math.min(38,rh*.72);
+ for(let i=0;i<perPage;i++){
   const p=rows[i],y=top+headH+rh*(i+.5);
-  html+=txt(pageIndex*12+i+1,81.7,y,11.3);
+  html+=txt(pageIndex*perPage+i+1,81.7,y,Math.min(11.3,fontSize));
   if(!p)continue;
   const n=String(p.full_name||''),category=String(p.position||'');
-  html+=txt(n,169.6,y,n.length>15?8.5:n.length>10?10:11.8);
-  html+=txt(category,318.7,y,category.length>19?8:category.length>12?10:11.5);
+  html+=txt(n,169.6,y,Math.min(fontSize,n.length>15?8.5:n.length>10?10:11.8));
+  html+=txt(category,318.7,y,Math.min(fontSize,category.length>19?8:category.length>12?10:11.5));
   if(p.signature_data?.startsWith('data:image/png;base64,')&&p.signature_data.length<=180000)
-   html+='<image href="'+esc(p.signature_data)+'" x="417" y="'+(y-19)+'" width="117" height="38" preserveAspectRatio="xMidYMid meet"/>';
+   html+='<image href="'+esc(p.signature_data)+'" x="417" y="'+(y-signH/2)+'" width="117" height="'+signH+'" preserveAspectRatio="xMidYMid meet"/>';
  }
  return html+'</svg>';
 }
 function meetingPages(){
- let html='',pages=Math.max(1,Math.ceil(people.length/12));
- for(let p=0;p<pages;p++)html+='<article class="meeting-sheet paper-sheet">'+meetingSvg(people.slice(p*12,(p+1)*12),p)+'</article>';
+ const perPage=meetingPageSize();
+ let html='',pages=Math.max(1,Math.ceil(people.length/perPage));
+ for(let p=0;p<pages;p++)html+='<article class="meeting-sheet paper-sheet">'+meetingSvg(people.slice(p*perPage,(p+1)*perPage),p)+'</article>';
  return html;
 }
 const prevPreview=window.previewPrint;
@@ -155,8 +160,11 @@ async function meetingXlsx(){
  ws.getRow(2).height=30;
  ws.getRow(4).values=['연번','성명','구분','서명'];
  const edge={top:{style:'thin'},bottom:{style:'thin'},left:{style:'thin'},right:{style:'thin'}};
- for(let r=4;r<=Math.max(16,4+people.length);r++){
-  ws.getRow(r).height=r===4?32:44;
+ const perPage=meetingPageSize();
+ const rowCount=Math.max(perPage,Math.ceil(Math.max(1,people.length)/perPage)*perPage);
+ const printRowHeight=Math.min(44,Math.max(12,Math.floor(590/perPage)));
+ for(let r=4;r<=4+rowCount;r++){
+  ws.getRow(r).height=r===4?32:printRowHeight;
   for(let c=1;c<=4;c++){
    const cell=ws.getCell(r,c);cell.border=edge;
    cell.alignment={horizontal:'center',vertical:'middle',wrapText:true};
@@ -170,10 +178,11 @@ async function meetingXlsx(){
   ws.getCell('C'+r).value=p.position||'';
   if(p.signature_data?.startsWith('data:image/png;base64,')){
    const imageId=wb.addImage({base64:p.signature_data,extension:'png'});
-   ws.addImage(imageId,{tl:{col:3.08,row:r-1+.09},ext:{width:130,height:36},editAs:'oneCell'});
+   ws.addImage(imageId,{tl:{col:3.08,row:r-1+.09},ext:{width:Math.min(130,Math.max(56,printRowHeight*3.2)),height:Math.min(36,printRowHeight*.78)},editAs:'oneCell'});
   }
  }
- ws.pageSetup={paperSize:9,orientation:'portrait',fitToPage:true,fitToWidth:1,fitToHeight:0};
+ for(let row=4+perPage;row<4+rowCount;row+=perPage)ws.getRow(row).addPageBreak?.();
+ ws.pageSetup={paperSize:9,orientation:'portrait',fitToPage:true,fitToWidth:1,fitToHeight:0,printTitlesRow:'1:4'};
  const result=await wb.xlsx.writeBuffer();
  download((current.title||'회의')+'_회의등록부.xlsx',new Blob([result],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
  notice('회의 등록부 Excel 파일을 저장했습니다.');
