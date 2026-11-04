@@ -75,7 +75,7 @@ window.editTraining=function(){
 };
 D.getElementById('trainingForm').addEventListener('submit',async(e)=>{
  e.preventDefault();const title=dTitle.value.trim(),when_text=dWhen.value.trim(),place=dPlace.value.trim();
- if(!title||!when_text||!place)return;const registration_type=$('dlgRegistrationType').value==='meeting'?'meeting':'training';const page_size=registration_type==='meeting'?12:Math.floor(Number($('dlgSize').value));if(!Number.isInteger(page_size)||page_size<1||page_size>50)return notice('인원수를 확인하세요.');const selected_template_id=$('dlgTemplate').value||null;
+ if(!title||!when_text||!place)return;const registration_type=$('dlgRegistrationType').value==='meeting'?'meeting':'training';const page_size=Math.floor(Number($('dlgSize').value));if(!Number.isInteger(page_size)||page_size<1||page_size>50)return notice('인원수를 확인하세요.');const selected_template_id=$('dlgTemplate').value||null;
  let btn=D.getElementById('dlgSave');btn.disabled=true;
  try{
   if(editingId){
