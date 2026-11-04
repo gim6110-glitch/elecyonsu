@@ -80,7 +80,7 @@ function tile(t){
  const a=counts.get(t.id)||{total:0,signed:0};
  const percent=a.total?Math.round(a.signed/a.total*100):0;
  return '<article class="training-card">'+
- '<h3>'+escapeHtml(t.title)+'</h3><p>📅 '+escapeHtml(t.when_text)+'</p><p>📍 '+escapeHtml(t.place)+'</p>'+
+ '<h3>'+(t.registration_type==='meeting'?'회의 등록부 · ':'연수 등록부 · ')+escapeHtml(t.title)+'</h3><p>📅 '+escapeHtml(t.when_text)+'</p><p>📍 '+escapeHtml(t.place)+'</p>'+
  '<p>서명 '+a.signed+' / '+a.total+'명 ('+percent+'%)</p>'+
  '<div class="mini-progress"><span style="width:'+percent+'%"></span></div>'+
  '<div class="actions"><button onclick="openTraining(\''+t.id+'\')">관리</button>'+
@@ -125,7 +125,7 @@ window.deleteTraining=async function(id){
 };
 async function importRows(trainingId,rows){
  if(!rows.length)return 0;
- const clean=rows.map(x=>({position:String(x.position||x['직급']||x['직위']||'교사').trim()||'교사',full_name:String(x.full_name||x['성명']||'').trim()}));
+ const clean=rows.map(x=>({position:String(x.position||x['구분']||x['직급']||x['직위']||(current?.registration_type==='meeting'?'참석':'교사')).trim()||(current?.registration_type==='meeting'?'참석':'교사'),full_name:String(x.full_name||x['성명']||'').trim()}));
  if(clean.some(x=>!x.full_name||x.full_name.length>120||x.position.length>100))throw Error('일부 명단의 성명 또는 직급을 확인하세요.');
  let added=0;
  for(let start=0;start<clean.length;start+=200){
@@ -142,8 +142,8 @@ window.uploadRoster=async function(event){
   const rows=XLSX.utils.sheet_to_json(ws,{defval:''}).filter(r=>String(r['성명']||'').trim());
   if(!rows.length)throw Error('성명 열이 없거나 명단이 비어 있습니다. 먼저 빈 명단 양식을 다운로드해 작성하세요.');
   if(rows.length>200)throw Error('한 번에 200명까지 업로드하세요.');
-  const duplicateNames=rows.filter((r,i)=>rows.findIndex(x=>String(x['성명']).trim()===String(r['성명']).trim() && String(x['직급']||x['직위'])===String(r['직급']||r['직위']))!==i);
-  const extra=duplicateNames.length?'\n같은 성명·직급이 '+duplicateNames.length+'건 있어 확인이 필요합니다.':'';
+  const duplicateNames=rows.filter((r,i)=>rows.findIndex(x=>String(x['성명']).trim()===String(r['성명']).trim() && String(x['구분']||x['직급']||x['직위'])===String(r['구분']||r['직급']||r['직위']))!==i);
+  const extra=duplicateNames.length?'\n같은 성명·구분이 '+duplicateNames.length+'건 있어 확인이 필요합니다.':'';
   if(!confirm(rows.length+'명을 한 번에 등록하시겠습니까?'+extra))return;
   const count=await importRows(current.id,rows);
   await loadPeople();notice(count+'명의 명단을 한 번에 등록했습니다.');
